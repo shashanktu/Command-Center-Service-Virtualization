@@ -61,3 +61,34 @@ jobs:
         run: |
           echo "Contents of app.zip:"
           unzip -l app.zip
+
+      - name: Prepare deployment package
+        run: |
+            rm -rf deploy
+            mkdir deploy
+        
+            JAR=$(find backend/target -maxdepth 1 -name "*.jar" -type f | head -n 1)
+        
+            echo "JAR found:"
+            echo "$JAR"
+        
+            ls -lh "$JAR"
+        
+            cp "$JAR" deploy/service-virtualization.jar
+        
+            echo "Deployment directory:"
+            ls -lah deploy
+        
+            cd deploy
+            zip -r ../app.zip .
+
+      - name: Verify deployment package
+        run: |
+          echo "=== app.zip ==="
+          ls -lh app.zip
+      
+          echo "=== ZIP contents ==="
+          unzip -l app.zip
+      
+          echo "=== Verify JAR inside ZIP ==="
+          unzip -l app.zip | grep service-virtualization.jar

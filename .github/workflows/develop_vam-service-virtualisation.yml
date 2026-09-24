@@ -27,6 +27,18 @@ jobs:
         working-directory: backend
         run: mvn -B -DskipTests clean package
 
+      - name: Verify Spring Boot JAR
+        run: |
+          JAR=$(find backend/target -maxdepth 1 -name "*.jar" -type f | head -n 1)
+      
+          echo "JAR: $JAR"
+      
+          echo "Checking Spring Boot structure..."
+          jar tf "$JAR" | grep -E "BOOT-INF|org/springframework/boot/loader" | head -20
+      
+          echo "Checking manifest..."
+          unzip -p "$JAR" META-INF/MANIFEST.MF
+
       - name: List generated files
         run: |
           echo "Contents of backend/target:"

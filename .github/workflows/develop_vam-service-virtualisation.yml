@@ -56,3 +56,8 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_CREDENTIALS }}
           package: app.zip
+
+      - name: Show deployment package
+        run: |
+          echo "Contents of app.zip:"
+          unzip -l app.zip

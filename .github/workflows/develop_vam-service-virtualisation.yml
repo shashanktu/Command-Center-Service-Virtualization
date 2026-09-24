@@ -15,26 +15,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          java-version: "21"
+          java-version: "17"
           distribution: "temurin"
           cache: maven
 
       - name: Build JAR with Maven
         working-directory: backend
-        run: mvn -B -DskipTests package
+        run: mvn -B -DskipTests clean package
+
+      - name: Verify JAR
+        run: |
+          echo "Files in target:"
+          ls -lh backend/target/
+
+      - name: Prepare deployment package
+        run: |
+          mkdir deploy
+          cp backend/target/service-virtualization.jar deploy/
+          cd deploy
+          zip -r ../app.zip .
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: service-virtualization-jar
-          path: backend/target/*.jar
+          path: backend/target/service-virtualization.jar
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_CREDENTIALS }}
-          package: backend/target/*.jar
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE2 }}
+          package: app.zip

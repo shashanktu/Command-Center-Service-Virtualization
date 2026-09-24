@@ -55,3 +55,4 @@ jobs:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_CREDENTIALS }}
           package: app.zip
+          startup-command: 'java -jar service-virtualization.jar --server.port=3001'

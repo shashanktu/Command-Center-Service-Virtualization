@@ -26,23 +26,28 @@ jobs:
         working-directory: backend
         run: mvn -B -DskipTests clean package
 
-      - name: Verify JAR
+      - name: List generated files
         run: |
-          echo "Files in target:"
-          ls -lh backend/target/
+          echo "Contents of backend/target:"
+          ls -lah backend/target/
 
       - name: Prepare deployment package
         run: |
           mkdir deploy
-          cp backend/target/service-virtualization.jar deploy/
+          cp backend/target/*.jar deploy/service-virtualization.jar
           cd deploy
           zip -r ../app.zip .
+
+      - name: Show deployment package
+        run: |
+          echo "Contents of app.zip:"
+          unzip -l app.zip
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: service-virtualization-jar
-          path: backend/target/service-virtualization.jar
+          path: backend/target/*.jar
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3

@@ -1,8 +1,8 @@
 const axios = require('axios');
 async function test() {
   try {
-    const res = await axios.post('http://localhost:3001/api/health-check', {
-      url: 'http://localhost:3001/api/mock/123',
+    const res = await axios.post('vam-service-virtualisation-ftada5d6eqgzaphb.eastus-01.azurewebsites.net/api/health-check', {
+      url: 'vam-service-virtualisation-ftada5d6eqgzaphb.eastus-01.azurewebsites.net/api/mock/123',
       method: 'GET',
       headers: {},
       params: {}

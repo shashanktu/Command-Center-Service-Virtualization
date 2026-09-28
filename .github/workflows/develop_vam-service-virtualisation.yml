@@ -1,190 +1,194 @@
 name: Build and Deploy Spring Boot Backend
- 
+
 on:
-
   push:
-
     branches:
-
       - develop
- 
+
   workflow_dispatch:
- 
+
 env:
-
   AZURE_WEBAPP_NAME: vam-service-virtualisation
-
   JAVA_VERSION: '17'
-
   SOURCE_JAR: backend/target/service-virtualization-0.0.1-SNAPSHOT.jar
+  DEPLOY_JAR: deploy/service-virtualization.jar
 
-  DEPLOY_JAR: service-virtualization.jar
- 
 jobs:
-
   build-and-deploy:
- 
+
     runs-on: ubuntu-latest
- 
+
     steps:
- 
-      # ---------------------------------------------------------
 
+      # ---------------------------------------------------------
       # 1. Checkout source code
-
       # ---------------------------------------------------------
-
       - name: Checkout repository
-
         uses: actions/checkout@v4
- 
-      # ---------------------------------------------------------
 
+
+      # ---------------------------------------------------------
       # 2. Setup Java 17
-
       # ---------------------------------------------------------
-
       - name: Set up Java 17
-
         uses: actions/setup-java@v4
-
         with:
-
           java-version: ${{ env.JAVA_VERSION }}
-
           distribution: temurin
-
           cache: maven
- 
-      # ---------------------------------------------------------
 
-      # 3. Check Java and Maven
 
       # ---------------------------------------------------------
-
+      # 3. Check Java and Maven versions
+      # ---------------------------------------------------------
       - name: Check Java and Maven versions
-
         run: |
-
+          echo "Java version:"
           java -version
 
+          echo ""
+          echo "Maven version:"
           mvn -version
- 
-      # ---------------------------------------------------------
 
-      # 4. Build Spring Boot executable JAR
 
       # ---------------------------------------------------------
-
+      # 4. Build Spring Boot application
+      # ---------------------------------------------------------
       - name: Build Spring Boot application
-
         working-directory: backend
-
         run: |
+          echo "Building Spring Boot application..."
 
           mvn -B clean package -DskipTests
- 
-      # ---------------------------------------------------------
 
-      # 5. Verify generated JAR
 
       # ---------------------------------------------------------
+      # 5. Display generated files
+      # ---------------------------------------------------------
+      - name: Inspect build output
+        run: |
+          echo "Files generated under backend/target:"
+          echo ""
 
+          find backend/target -maxdepth 1 -type f -printf "%f\n" | sort
+
+
+      # ---------------------------------------------------------
+      # 6. Verify generated JAR
+      # ---------------------------------------------------------
       - name: Verify generated JAR
-
         run: |
-
           echo "Checking generated JAR..."
- 
+
           if [ ! -f "${{ env.SOURCE_JAR }}" ]; then
-
-            echo "ERROR: JAR file was not generated."
-
             echo ""
-
-            echo "Available files under backend/target:"
-
+            echo "ERROR: Expected JAR was not found:"
+            echo "${{ env.SOURCE_JAR }}"
+            echo ""
+            echo "Available files:"
             find backend/target -maxdepth 1 -type f -print
-
             exit 1
-
           fi
- 
-          echo "JAR found:"
 
+          echo ""
+          echo "JAR found successfully:"
           ls -lh "${{ env.SOURCE_JAR }}"
- 
-      # ---------------------------------------------------------
 
-      # 6. Verify Spring Boot manifest
 
       # ---------------------------------------------------------
-
+      # 7. Verify Spring Boot executable JAR
+      # ---------------------------------------------------------
       - name: Verify Spring Boot manifest
-
         run: |
+          echo "Checking Spring Boot JAR manifest..."
+          echo ""
 
-          echo "Checking JAR manifest..."
- 
           unzip -p "${{ env.SOURCE_JAR }}" META-INF/MANIFEST.MF
- 
+
+          echo ""
+          echo "Manifest verification completed."
+
+
       # ---------------------------------------------------------
-
-      # 7. Prepare deployment JAR
-
+      # 8. Verify JAR contents
       # ---------------------------------------------------------
-
-      - name: Prepare deployment JAR
-
+      - name: Inspect JAR contents
         run: |
+          echo "First 30 entries inside the JAR:"
+          echo ""
 
-          echo "Preparing deployment JAR..."
- 
-          cp "${{ env.SOURCE_JAR }}" "${{ env.DEPLOY_JAR }}"
- 
-          echo "Deployment JAR:"
+          jar tf "${{ env.SOURCE_JAR }}" | head -30
 
-          ls -lh "${{ env.DEPLOY_JAR }}"
- 
-      # ---------------------------------------------------------
-
-      # 8. Verify deployment JAR
 
       # ---------------------------------------------------------
-
-      - name: Verify deployment JAR
-
+      # 9. Create Azure deployment package
+      # ---------------------------------------------------------
+      - name: Prepare deployment package
         run: |
+          echo "Creating deployment directory..."
 
+          rm -rf deploy
+          mkdir -p deploy
+
+          echo "Copying application JAR..."
+
+          cp "${{ env.SOURCE_JAR }}" \
+             "${{ env.DEPLOY_JAR }}"
+
+          echo ""
+          echo "Deployment package contents:"
+          find deploy -maxdepth 1 -type f -ls
+
+
+      # ---------------------------------------------------------
+      # 10. Verify deployment package
+      # ---------------------------------------------------------
+      - name: Verify deployment package
+        run: |
           echo "Verifying deployment package..."
- 
+
           if [ ! -f "${{ env.DEPLOY_JAR }}" ]; then
-
-            echo "ERROR: Deployment JAR does not exist."
-
+            echo ""
+            echo "ERROR: Deployment JAR was not created."
+            echo "Expected:"
+            echo "${{ env.DEPLOY_JAR }}"
             exit 1
-
           fi
- 
-          echo "Deployment JAR is ready:"
 
+          echo ""
+          echo "Deployment JAR successfully created:"
           ls -lh "${{ env.DEPLOY_JAR }}"
- 
+
+          echo ""
+          echo "Final deployment structure:"
+          find deploy -maxdepth 1 -type f -print
+
+
       # ---------------------------------------------------------
-
-      # 9. Deploy to Azure Web App
-
+      # 11. Deploy to Azure App Service
       # ---------------------------------------------------------
-
       - name: Deploy to Azure Web App
-
         uses: azure/webapps-deploy@v3
-
         with:
-
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-
           publish-profile: ${{ secrets.AZURE_CREDENTIALS }}
+          package: deploy
 
-          package: ${{ env.DEPLOY_JAR }}
- 
+
+      # ---------------------------------------------------------
+      # 12. Deployment completed
+      # ---------------------------------------------------------
+      - name: Deployment completed
+        run: |
+          echo "=========================================="
+          echo "Azure deployment completed successfully."
+          echo "=========================================="
+          echo ""
+          echo "App Service:"
+          echo "${{ env.AZURE_WEBAPP_NAME }}"
+          echo ""
+          echo "Expected JAR:"
+          echo "service-virtualization.jar"
+          echo ""
+          echo "Expected startup command:"
+          echo "java -jar service-virtualization.jar --server.port=3001"

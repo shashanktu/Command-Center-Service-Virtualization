@@ -153,7 +153,17 @@ public class ProxyController {
                         com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
                         Map<String, String> hdrs = mapper.readValue(stub.getResponseHeaders(), new com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>(){});
                         for (Map.Entry<String, String> entry : hdrs.entrySet()) {
-                            builder.header(entry.getKey(), entry.getValue());
+                            String key = entry.getKey();
+                            String val = entry.getValue();
+                            if (key == null || val == null) continue;
+                            if (key.toLowerCase().startsWith("access-control-")
+                                    || key.equalsIgnoreCase("content-length")
+                                    || key.equalsIgnoreCase("transfer-encoding")
+                                    || key.equalsIgnoreCase("connection")
+                                    || key.equalsIgnoreCase("content-encoding")) {
+                                continue;
+                            }
+                            builder.header(key, val);
                         }
                     } catch (Exception e) {}
                 }
@@ -215,7 +225,7 @@ public class ProxyController {
                                 String key = entry.getKey();
                                 String val = entry.getValue();
                                 if (key == null || val == null) continue;
-                                if (!key.equalsIgnoreCase("content-length") && !key.equalsIgnoreCase("transfer-encoding") && !key.equalsIgnoreCase("connection") && !key.equalsIgnoreCase("content-encoding")) {
+                                if (!key.toLowerCase().startsWith("access-control-") && !key.equalsIgnoreCase("content-length") && !key.equalsIgnoreCase("transfer-encoding") && !key.equalsIgnoreCase("connection") && !key.equalsIgnoreCase("content-encoding")) {
                                     val = val.replaceAll("[\\r\\n]+", " ");
                                     if (key.matches("^[a-zA-Z0-9!#$%&'*+.^_`|~-]+$")) {
                                         builder.header(key, val);
@@ -300,7 +310,7 @@ public class ProxyController {
                 String key = entry.getKey();
                 String val = entry.getValue();
                 if (key == null || val == null) continue;
-                if (!key.equalsIgnoreCase("content-length") && !key.equalsIgnoreCase("transfer-encoding") && !key.equalsIgnoreCase("connection") && !key.equalsIgnoreCase("content-encoding")) {
+                if (!key.toLowerCase().startsWith("access-control-") && !key.equalsIgnoreCase("content-length") && !key.equalsIgnoreCase("transfer-encoding") && !key.equalsIgnoreCase("connection") && !key.equalsIgnoreCase("content-encoding")) {
                     try {
                         val = val.replaceAll("[\\r\\n]+", " ");
                         if (key.matches("^[a-zA-Z0-9!#$%&'*+.^_`|~-]+$")) {

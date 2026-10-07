@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { stubApi } from '../../services/registryApi';
+import { API_BASE_URL, stubApi } from '../../services/registryApi';
 import StubForm from './StubForm';
 import StubVersionForm from './StubVersionForm';
 
@@ -93,11 +93,14 @@ const StubsTab = () => {
     }
     return true;
   });
+  const mockUrl = selectedStub
+    ? `${API_BASE_URL.replace(/\/+$/, '')}/mock/${encodeURIComponent(selectedStub.id)}`
+    : '';
 
   return (
-    <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '24px', height: 'calc(100vh - 120px)' }}>
+    <div className="fade-in stubs-layout">
       {/* Left Panel */}
-      <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="glass-panel stubs-panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h2>Stubs ({filteredStubs.length})</h2>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -143,9 +146,9 @@ const StubsTab = () => {
       </div>
 
       {/* Right Panel */}
-      <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="glass-panel stubs-panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {selectedStub ? (
-          <div className="fade-in" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div className="fade-in stubs-detail">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <div>
                 <h2>{selectedStub.name}</h2>
@@ -156,7 +159,7 @@ const StubsTab = () => {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '12px' }}>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>Mock URL:</div>
                   <code style={{ fontSize: '0.75rem', background: 'rgba(0,0,0,0.1)', padding: '4px 8px', borderRadius: '4px', wordBreak: 'break-all' }}>
-                    {`${window.location.protocol}//${window.location.host}/api/mock/${selectedStub.id}`}
+                    {mockUrl}
                   </code>
                 </div>
               </div>
@@ -165,7 +168,7 @@ const StubsTab = () => {
                   className="btn-secondary" 
                   title="Copy Mock URL"
                   style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.2)' }} 
-                  onClick={() => navigator.clipboard.writeText(`${window.location.protocol}//${window.location.host}/api/mock/${selectedStub.id}`)}>
+                  onClick={() => navigator.clipboard.writeText(mockUrl)}>
                   🔗 Copy
                 </button>
                 <button 
@@ -202,7 +205,7 @@ const StubsTab = () => {
               <h3 style={{ margin: 0 }}>Versions</h3>
               <button className="btn" style={{ padding: '6px 12px', fontSize: '0.85rem' }} onClick={() => { setEditVersion(null); setShowVersionForm(true); }}>+ New Version</button>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="stubs-version-list">
               {versions.map(v => (
                 <div key={v.versionId} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', background: v.active ? 'rgba(139, 92, 246, 0.05)' : 'transparent', borderColor: v.active ? 'var(--primary)' : 'var(--border-color)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>

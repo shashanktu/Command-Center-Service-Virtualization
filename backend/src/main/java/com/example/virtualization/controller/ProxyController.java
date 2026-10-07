@@ -8,6 +8,8 @@ import com.example.virtualization.service.JwtService;
 import com.example.virtualization.stub.service.StubMatchingService;
 import com.example.virtualization.stub.service.StubService;
 import com.example.virtualization.util.SecurityHelper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -35,6 +37,7 @@ public class ProxyController {
     private final JdbcTemplate jdbc;
     private final AwsStorageService awsStorageService;
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ProxyController.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     public ProxyController(HttpForwardService httpForwardService, StubMatchingService stubMatchingService, StubService stubService, JwtService jwtService, JdbcTemplate jdbc, AwsStorageService awsStorageService) {
         this.httpForwardService = httpForwardService;
@@ -267,7 +270,7 @@ public class ProxyController {
                         newVersion.setVersionTag("Auto-recorded: " + res.statusCode);
                         newVersion.setResponseStatus(res.statusCode);
                         newVersion.setResponseBody(res.body);
-                        newVersion.setResponseHeaders(res.headers != null ? res.headers.toString() : "");
+                        newVersion.setResponseHeaders(serializeResponseHeaders(res.headers));
                         newVersion.setActive(false);
                         stubService.createVersion(existingStub.getId(), newVersion);
                     }
@@ -275,7 +278,7 @@ public class ProxyController {
                     // Automatically update the main stub's active response to the latest live API response
                     existingStub.setResponseStatus(res.statusCode);
                     existingStub.setResponseBody(res.body);
-                    existingStub.setResponseHeaders(res.headers != null ? res.headers.toString() : "");
+                    existingStub.setResponseHeaders(serializeResponseHeaders(res.headers));
                     existingStub.setRequestMatcher(body); // Update the latest request body
                     stubService.createOrUpdateStub(existingStub);
                 } else {
@@ -289,7 +292,7 @@ public class ProxyController {
                     stub.setRequestMatcher(body); // Save the request body for the API Tester
                     stub.setResponseStatus(res.statusCode);
                     stub.setResponseBody(res.body);
-                    stub.setResponseHeaders(res.headers != null ? res.headers.toString() : "");
+                    stub.setResponseHeaders(serializeResponseHeaders(res.headers));
                     stub.setEnabled(true);
                     stub.setCategory("other");
                     stub.setVersion("v1");
@@ -326,6 +329,16 @@ public class ProxyController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("{\"error\": \"Backend Proxy Exception: " + e.getClass().getName() + " - " + e.getMessage() + "\"}");
+        }
+    }
+
+    private static String serializeResponseHeaders(Map<String, String> headers) {
+        if (headers == null || headers.isEmpty()) return "{}";
+        try {
+            return OBJECT_MAPPER.writeValueAsString(headers);
+        } catch (JsonProcessingException e) {
+            log.warn("Could not serialize upstream response headers", e);
+            return "{}";
         }
     }
 

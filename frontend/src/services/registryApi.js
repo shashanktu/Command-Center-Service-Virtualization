@@ -1,11 +1,13 @@
 import axios from 'axios';
 
-const BASE_URL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  'https://vam-service-virtualisation-ftada5d6eqgzaphb.eastus-01.azurewebsites.net/api';
+  (import.meta.env.DEV
+    ? 'http://localhost:3001/api'
+    : 'https://vam-service-virtualisation-ftada5d6eqgzaphb.eastus-01.azurewebsites.net/api');
 
 const api = axios.create({
-  baseURL: BASE_URL
+  baseURL: API_BASE_URL
 });
 
 api.interceptors.request.use((config) => {

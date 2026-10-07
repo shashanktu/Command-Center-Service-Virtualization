@@ -33,11 +33,11 @@ const StubVersionForm = ({ stubId, version, onClose, onSave }) => {
       onSave();
     } catch (err) {
       console.error(err);
-      if (err.response && err.response.data && typeof err.response.data === 'string') {
-        alert(err.response.data);
-      } else {
-        alert("Failed to save version");
-      }
+      const responseMessage = typeof err.response?.data === 'string' ? err.response.data : '';
+      const message = responseMessage || (err.response?.status === 403
+        ? 'You do not have permission to create or update versions.'
+        : 'Failed to save version. Check the backend response and try again.');
+      alert(message);
     } finally {
       setSaving(false);
     }
@@ -52,7 +52,16 @@ const StubVersionForm = ({ stubId, version, onClose, onSave }) => {
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body grid-2">
-
+            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <label>Version</label>
+              <input
+                className="form-control"
+                placeholder="Leave blank to assign the next version automatically"
+                value={formData.version || ''}
+                onChange={e => setFormData({ ...formData, version: e.target.value })}
+                readOnly={Boolean(version)}
+              />
+            </div>
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
               <label>Version Tag / Description</label>
               <input className="form-control" placeholder="Error Scenario" value={formData.versionTag} onChange={e => setFormData({...formData, versionTag: e.target.value})} />

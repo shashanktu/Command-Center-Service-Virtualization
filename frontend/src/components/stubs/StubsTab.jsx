@@ -96,6 +96,21 @@ const StubsTab = () => {
   const mockUrl = selectedStub
     ? `${API_BASE_URL.replace(/\/+$/, '')}/mock/${encodeURIComponent(selectedStub.id)}`
     : '';
+  const testStub = (version = null) => {
+    const baseUrl = selectedStub.baseUrl?.trim() || '';
+    navigate('/service-virtualization/api', {
+      state: {
+        request: {
+          endpoint: selectedStub.endpoint,
+          method: selectedStub.method,
+          category: selectedStub.category,
+          baseUrl: baseUrl && !/^https?:\/\//i.test(baseUrl) ? `https://${baseUrl}` : baseUrl,
+          body: selectedStub.requestMatcher,
+          responseHeaders: version?.responseHeaders || selectedStub.responseHeaders
+        }
+      }
+    });
+  };
 
   return (
     <div className="fade-in stubs-layout">
@@ -175,7 +190,7 @@ const StubsTab = () => {
                   className="btn-secondary" 
                   title="Test Stub in API Tester"
                   style={{ padding: '6px 12px', fontSize: '0.85rem', borderRadius: '6px', background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)' }} 
-                  onClick={() => navigate('/service-virtualization/api', { state: { request: { endpoint: selectedStub.endpoint, method: selectedStub.method, category: selectedStub.category, baseUrl: selectedStub.baseUrl, body: selectedStub.requestMatcher } } })}>
+                  onClick={() => testStub()}>
                   🧪 Test
                 </button>
                 <button 
@@ -214,6 +229,13 @@ const StubsTab = () => {
                       <span className={`badge badge-${v.responseStatus >= 200 && v.responseStatus < 300 ? 'success' : 'danger'}`}>Status {v.responseStatus}</span>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button
+                        className="btn-secondary"
+                        title="Test API with this version's headers"
+                        style={{ padding: '4px 8px', fontSize: '0.8rem', border: '1px solid rgba(0,0,0,0.1)' }}
+                        onClick={() => testStub(v)}>
+                        Test API
+                      </button>
                       <button className="btn-secondary" title="Edit Version" style={{ padding: '4px 8px', fontSize: '0.8rem', border: '1px solid rgba(0,0,0,0.1)' }} onClick={() => { setEditVersion(v); setShowVersionForm(true); }}>✏️</button>
                       <button className="btn-danger" title="Delete Version" disabled={v.active} style={{ padding: '4px 8px', fontSize: '0.8rem', border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.15)', color: '#fca5a5', opacity: v.active ? 0.5 : 1, cursor: v.active ? 'not-allowed' : 'pointer' }} onClick={async () => {
                         if (window.confirm('Delete version?')) {

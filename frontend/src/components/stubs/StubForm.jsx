@@ -6,7 +6,7 @@ import { parseCurl } from '../../utils/curlParser';
 const StubForm = ({ stub, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: '', method: 'GET', endpoint: '', baseUrl: '', category: 'Other', environment: 'Dev', description: '',
-    requestMatcher: '', responseStatus: 200, responseBody: '', responseHeaders: '{}', delay: 0, enabled: true
+    requestMatcher: '', responseStatus: 200, responseBody: '', responseHeaders: '{\n  "Content-Type": "application/json"\n}', delay: 0, enabled: true
   });
   const [curlInput, setCurlInput] = useState('');
 
@@ -17,12 +17,16 @@ const StubForm = ({ stub, onClose, onSave }) => {
   const handleCurlImport = () => {
     try {
       const parsed = parseCurl(curlInput);
+      const baseUrl = parsed.url ? new URL(parsed.url).origin : '';
       setFormData(prev => ({
         ...prev,
         method: parsed.method || prev.method,
         endpoint: parsed.path || parsed.url || prev.endpoint,
-        baseUrl: parsed.host || prev.baseUrl,
-        requestMatcher: parsed.body || prev.requestMatcher
+        baseUrl: baseUrl || prev.baseUrl,
+        requestMatcher: parsed.body || prev.requestMatcher,
+        responseHeaders: Object.keys(parsed.headers).length > 0
+          ? JSON.stringify(parsed.headers, null, 2)
+          : prev.responseHeaders
       }));
       setCurlInput('');
     } catch (err) {
@@ -109,7 +113,7 @@ const StubForm = ({ stub, onClose, onSave }) => {
             </div>
             <div className="form-group">
               <label>Response Headers (JSON)</label>
-              <textarea className="form-control" value={formData.responseHeaders || ''} onChange={e => setFormData({...formData, responseHeaders: e.target.value})} rows="2" />
+              <textarea className="form-control" value={formData.responseHeaders || '{\n  "Content-Type": "application/json"\n}'} onChange={e => setFormData({...formData, responseHeaders: e.target.value})} rows="2" />
             </div>
             <div className="form-group">
               <label>Delay (ms)</label>

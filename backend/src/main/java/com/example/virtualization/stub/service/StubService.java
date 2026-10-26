@@ -2,9 +2,14 @@ package com.example.virtualization.stub.service;
 
 import com.example.virtualization.model.Stub;
 import com.example.virtualization.model.StubVersion;
+import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -65,11 +70,28 @@ public class StubService {
         return stubs.isEmpty() ? null : stubs.get(0);
     }
 
+    @Transactional
     public Stub createOrUpdateStub(Stub stub) {
         if (stub.getId() == null || stub.getId().isEmpty()) {
             stub.setId(UUID.randomUUID().toString());
-            jdbc.update("INSERT INTO stubs (id, name, method, endpoint, baseUrl, environment, description, requestMatcher, responseStatus, responseBody, responseHeaders, delay, enabled, category, version, ownerGroup) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    stub.getId(), stub.getName(), stub.getMethod(), stub.getEndpoint(), stub.getBaseUrl(), stub.getEnvironment() == null ? "Dev" : stub.getEnvironment(), stub.getDescription(), stub.getRequestMatcher(), stub.getResponseStatus(), stub.getResponseBody(), stub.getResponseHeaders(), stub.getDelay(), stub.isEnabled() ? 1 : 0, stub.getCategory(), stub.getVersion() == null ? "v1" : stub.getVersion(), stub.getOwnerGroup());
+            List<String> columns = new ArrayList<>(List.of(
+                    "id", "name", "method", "endpoint", "baseUrl", "environment", "description",
+                    "requestMatcher", "responseStatus", "responseBody", "responseHeaders", "delay",
+                    "enabled", "category", "version", "ownerGroup"));
+            List<Object> values = new ArrayList<>(Arrays.asList(
+                    stub.getId(), stub.getName(), stub.getMethod(), stub.getEndpoint(), stub.getBaseUrl(),
+                    stub.getEnvironment() == null ? "Dev" : stub.getEnvironment(), stub.getDescription(),
+                    stub.getRequestMatcher(), stub.getResponseStatus(), stub.getResponseBody(),
+                    stub.getResponseHeaders(), stub.getDelay(), stub.isEnabled() ? 1 : 0,
+                    stub.getCategory(), stub.getVersion() == null ? "v1" : stub.getVersion(),
+                    stub.getOwnerGroup()));
+            if (hasLegacyUrlPatternColumn()) {
+                columns.add("urlPattern");
+                values.add(stub.getEndpoint());
+            }
+            String placeholders = String.join(",", java.util.Collections.nCopies(columns.size(), "?"));
+            jdbc.update("INSERT INTO stubs (" + String.join(",", columns) + ") VALUES (" + placeholders + ")",
+                    values.toArray());
             
             StubVersion v1 = new StubVersion();
             v1.setStubId(stub.getId());
@@ -85,6 +107,20 @@ public class StubService {
                     stub.getName(), stub.getMethod(), stub.getEndpoint(), stub.getBaseUrl(), stub.getEnvironment() == null ? "Dev" : stub.getEnvironment(), stub.getDescription(), stub.getRequestMatcher(), stub.getResponseStatus(), stub.getResponseBody(), stub.getResponseHeaders(), stub.getDelay(), stub.isEnabled() ? 1 : 0, stub.getCategory(), stub.getVersion() == null ? "v1" : stub.getVersion(), stub.getId());
         }
         return getStub(stub.getId());
+    }
+
+    private boolean hasLegacyUrlPatternColumn() {
+        return jdbc.execute((ConnectionCallback<Boolean>) connection -> {
+            try (ResultSet columns = connection.getMetaData()
+                    .getColumns(connection.getCatalog(), null, "stubs", null)) {
+                while (columns.next()) {
+                    if ("urlpattern".equalsIgnoreCase(columns.getString("COLUMN_NAME"))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
     }
 
     public void deleteStub(String id) {

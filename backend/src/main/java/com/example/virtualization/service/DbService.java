@@ -50,6 +50,17 @@ public class DbService {
 
         // stub_versions
         jdbc.execute("CREATE TABLE IF NOT EXISTS stub_versions (versionId TEXT PRIMARY KEY, stubId TEXT NOT NULL, version TEXT NOT NULL, versionTag TEXT, responseStatus INTEGER DEFAULT 200, responseBody TEXT, responseHeaders TEXT, isActive INTEGER DEFAULT 0, createdAt DATETIME DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (stubId) REFERENCES stubs(id) ON DELETE CASCADE)");
+        ensureColumns("stub_versions", Map.ofEntries(
+            Map.entry("versionId", "TEXT"),
+            Map.entry("stubId", "TEXT NOT NULL DEFAULT ''"),
+            Map.entry("version", "TEXT NOT NULL DEFAULT 'v1'"),
+            Map.entry("versionTag", "TEXT"),
+            Map.entry("responseStatus", "INTEGER DEFAULT 200"),
+            Map.entry("responseBody", "TEXT"),
+            Map.entry("responseHeaders", "TEXT"),
+            Map.entry("isActive", "INTEGER DEFAULT 0"),
+            Map.entry("createdAt", "DATETIME")
+        ));
 
         // requests
         jdbc.execute("CREATE TABLE IF NOT EXISTS requests (id TEXT PRIMARY KEY, method TEXT NOT NULL, url TEXT NOT NULL, baseUrl TEXT, endpoint TEXT, headers TEXT NOT NULL, body TEXT, bodyS3Key TEXT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, status INTEGER, response TEXT, responseS3Key TEXT, responseHeaders TEXT, isRecorded INTEGER DEFAULT 0, category TEXT DEFAULT 'other', ownerGroup TEXT DEFAULT 'admin', source TEXT DEFAULT 'live-api')");

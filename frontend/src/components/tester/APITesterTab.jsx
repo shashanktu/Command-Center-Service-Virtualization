@@ -65,7 +65,7 @@ const APITesterTab = () => {
       setEndpoint(targetEndpoint);
       setBody(req.healthCheckBody || req.body || '');
       
-      const h = req.healthCheckHeaders || req.headers;
+      const h = req.healthCheckHeaders || req.headers || req.responseHeaders;
       if (h && h !== '{}') {
         try {
           JSON.parse(h);
@@ -88,6 +88,13 @@ const APITesterTab = () => {
 
   const handleSend = async (e) => {
     e.preventDefault();
+    const targetBaseUrl = baseUrl.trim();
+    const targetEndpoint = endpoint.trim();
+    if (!targetBaseUrl || !targetEndpoint) {
+      alert("Base URL and endpoint are required");
+      return;
+    }
+
     setLoading(true);
     setResponse(null);
     
@@ -100,16 +107,14 @@ const APITesterTab = () => {
       return;
     }
 
-    if (baseUrl) {
-      parsedHeaders['X-Target-Host'] = baseUrl;
-    }
+    parsedHeaders['X-Target-Host'] = targetBaseUrl;
     parsedHeaders['X-Api-Category'] = category;
 
     let requestData = {
       url: '/proxy-request',
       method,
       headers: parsedHeaders,
-      params: { endpoint },
+      params: { endpoint: targetEndpoint },
       data: method !== 'GET' ? body : undefined
     };
 
@@ -155,7 +160,7 @@ const APITesterTab = () => {
           <form onSubmit={handleSend}>
             <div className="form-group">
               <label>Base URL (Upstream Domain)</label>
-              <input className="form-control" placeholder="https://api.example.com" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} />
+              <input className="form-control" placeholder="https://api.example.com" value={baseUrl} onChange={e => setBaseUrl(e.target.value)} required />
             </div>
             <div className="form-group">
               <label>Endpoint Path</label>

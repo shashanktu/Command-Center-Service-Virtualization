@@ -6,25 +6,31 @@ import { parseCurl } from '../../utils/curlParser';
 const ApiFormModal = ({ api, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: '', method: 'GET', endpoint: '', category: 'Other', environment: 'Dev',
-    description: '', baseUrl: '', healthCheckHeaders: '{}', healthCheckBody: '',
+    description: '', baseUrl: '', healthCheckHeaders: '{\n  "Content-Type": "application/json"\n}', healthCheckBody: '',
     healthCheckParams: '{}', retryOn500: 0, isCustom: false
   });
   const [curlInput, setCurlInput] = useState('');
 
   useEffect(() => {
     if (api) {
-      setFormData(api);
+      setFormData({
+        ...api,
+        healthCheckHeaders: api.healthCheckHeaders && api.healthCheckHeaders !== '{}'
+          ? api.healthCheckHeaders
+          : '{\n  "Content-Type": "application/json"\n}'
+      });
     }
   }, [api]);
 
   const handleCurlImport = () => {
     try {
       const parsed = parseCurl(curlInput);
+      const baseUrl = parsed.url ? new URL(parsed.url).origin : '';
       setFormData(prev => ({
         ...prev,
         method: parsed.method || prev.method,
         endpoint: parsed.path || parsed.url || prev.endpoint,
-        baseUrl: parsed.url || prev.baseUrl,
+        baseUrl: baseUrl || prev.baseUrl,
         healthCheckHeaders: Object.keys(parsed.headers).length > 0 ? JSON.stringify(parsed.headers, null, 2) : prev.healthCheckHeaders,
         healthCheckBody: parsed.body || prev.healthCheckBody
       }));
@@ -101,7 +107,7 @@ const ApiFormModal = ({ api, onClose, onSave }) => {
 
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
               <label>Health Check Headers (JSON)</label>
-              <textarea className="form-control" value={formData.healthCheckHeaders || '{}'} onChange={e => setFormData({...formData, healthCheckHeaders: e.target.value})} rows="2" />
+              <textarea className="form-control" value={formData.healthCheckHeaders || '{\n  "Content-Type": "application/json"\n}'} onChange={e => setFormData({...formData, healthCheckHeaders: e.target.value})} rows="2" />
             </div>
             <div className="form-group" style={{ gridColumn: 'span 2' }}>
               <label>Description</label>
